@@ -660,6 +660,9 @@ class HuaWei:
                 if orderBtn is not None:
                     orderBtn.click()
 
+                    logger.info("切换tab")
+                    self.switch_tab_by_url(constants.ORDER_PAGE_URL)
+                    logger.info("post tab url: {}", self.browser.current_url)
                     isOrderPage = False
                     times = 0
                     while not isOrderPage:
@@ -681,6 +684,34 @@ class HuaWei:
             except (NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException) as e:
                 logger.info("未找到【立即购买】按钮或按钮不可点击； except:{}", e)
             logger.info("结束立即购买")
+
+    def switch_to_new_tab(self):
+        """
+        切换到最新打开的标签页
+        """
+        try:
+            # 获取最新的窗口句柄
+            new_handle = self.browser.window_handles[-1]
+            self.browser.switch_to.window(new_handle)
+            return True
+        except Exception as e:
+            logger.error("切换到新标签页失败", e)
+            return False
+
+    def switch_tab_by_url(self, url):
+        """
+        通过URL切换标签页
+        """
+        try:
+            logger.info("pre tab url: {}", self.browser.current_url)
+            for handle in self.browser.window_handles:
+                self.browser.switch_to.window(handle)
+                if url in self.browser.current_url:
+                    return True
+            return False
+        except Exception as e:
+            logger.error("通过URL切换标签页失败 {}", url, e)
+            return False
 
     def __submit_order(self):
         if self.is_can_submit_order:
@@ -716,7 +747,8 @@ class HuaWei:
 
     def __click_submit_order2(self, currentUrl):
         clickSuccess = False
-        self.browser.find_element(By.CSS_SELECTOR, '#checkoutSubmit').click()
+        # self.browser.find_element(By.CSS_SELECTOR, '#checkoutSubmit').click()
+        self.browser.execute_script('ec.order.submit()')
         boxCtPopIsExists = self.__check_box_ct_pop_stage()
         if boxCtPopIsExists:
             logger.warning("已点击提交订单，提交订单不成功，重试中...")
